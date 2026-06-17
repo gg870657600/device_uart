@@ -578,12 +578,19 @@ namespace chengkong
                     // 连续5次异常 → 终止整个任务，但仍执行收尾 redir_off
                     if (consecutiveZeroCount >= triggerStopCount)
                     {
+                        // 5次异常时不再额外追加"连续5次异常"右侧记录，
+                        // 避免 UI 比 txt 多 1 条（WriteToLog 仍由 line 548 在 5次异常检查前调用了一次）
                         var failLog = new List<string>(2)
                         {
                             $"[终止] ✗ 连续 {triggerStopCount} 次异常，自动终止任务！"
                         };
                         AppendLogLeftBatch(failLog);
-                        AppendLogRight($"【第 {currentCount} 次】连续 {triggerStopCount} 次异常，任务终止！", false);
+                        // 用合并信息覆盖刚才 line 576 那次"异常"记录，保持右侧与 txt 一一对应
+                        _resultEntries[_resultEntries.Count - 1] = new ResultEntry
+                        {
+                            Text = $"【第 {currentCount} 次】{keyword} = {currentValue} → 连续 {triggerStopCount} 次异常，任务终止！",
+                            IsOk = false
+                        };
 
                         Dispatcher.InvokeAsync(() =>
                         {

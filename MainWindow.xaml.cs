@@ -64,10 +64,13 @@ namespace chengkong
         private void AppendLogLeftBatch(IEnumerable<string> lines)
         {
             if (lines == null) return;
+            // 关键：拍快照（ToList），避免闭包陷阱
+            // 如果直接传 List 引用，外部 Clear 后 lambda 枚举时已为空
+            var snapshot = lines.ToList();
             Dispatcher.InvokeAsync(() =>
             {
                 var sb = new System.Text.StringBuilder();
-                foreach (string line in lines)
+                foreach (string line in snapshot)
                 {
                     sb.AppendLine(line);
                 }

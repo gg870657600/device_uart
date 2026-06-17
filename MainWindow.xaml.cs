@@ -394,6 +394,7 @@ namespace chengkong
                     localLog.Add($"[等待] 等 {intervalSec} 秒后读取返回...");
 
                     AppendLogLeftBatch(localLog);
+                    localLog.Clear();   // ← 关键：第一次输出后立刻清空
 
                     shell.WriteLine(userCommand);
 
@@ -404,9 +405,9 @@ namespace chengkong
                     }
                     catch (AggregateException) when (cancellationToken.IsCancellationRequested)
                     {
-                        localLog.Clear();
                         localLog.Add($"[取消] 第 {currentCount} 次执行等待中收到取消信号");
                         AppendLogLeftBatch(localLog);
+                        localLog.Clear();
                         break;
                     }
 

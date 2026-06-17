@@ -438,7 +438,8 @@ namespace chengkong
                         Task.Run(() => WriteToLog(currentCount, cancelResult, cancelValue, keyword, fieldPosition));
 
                         // 右侧补一条"已取消"记录，与正常/异常条目保持一一对应
-                        AppendLogRight($"【第 {currentCount} 次】{keyword} = -- → 已取消", false);
+                        // 用实际解析值展示（避免界面 "= --" 与 txt 日志里的真实值不一致）
+                        AppendLogRight($"【第 {currentCount} 次】{keyword} = {cancelValue} → 已取消", false);
                         UpdateCountDisplay();
                         break;
                     }

@@ -408,6 +408,9 @@ namespace chengkong
                         localLog.Add($"[取消] 第 {currentCount} 次执行等待中收到取消信号");
                         AppendLogLeftBatch(localLog);
                         localLog.Clear();
+                        // 右侧补一条"已取消"记录，与正常/异常条目保持一一对应
+                        AppendLogRight($"【第 {currentCount} 次】{keyword} = -- → 已取消", false);
+                        UpdateCountDisplay();
                         break;
                     }
 

@@ -1,0 +1,223 @@
+<Window x:Class="chengkong.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:chengkong"
+        mc:Ignorable="d"
+        Title="设备 SSH重定向串口 命令工具" Height="550" Width="1000"
+        Background="#FFF5F5F7"
+        FontFamily="Microsoft YaHei UI, Segoe UI"
+        Closing="MainWindow_Closing"
+        FontSize="13">
+
+    <Window.Resources>
+        <!-- 文本框统一样式 -->
+        <Style x:Key="ModernTextBox" TargetType="TextBox">
+            <Setter Property="Height" Value="24"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+            <Setter Property="Padding" Value="6,0"/>
+            <Setter Property="BorderBrush" Value="#FFCCCCCC"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Background" Value="White"/>
+            <Style.Triggers>
+                <Trigger Property="IsFocused" Value="True">
+                    <Setter Property="BorderBrush" Value="#FF0078D4"/>
+                    <Setter Property="BorderThickness" Value="1.5"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+
+        <!-- 标签统一样式 -->
+        <Style x:Key="LabelText" TargetType="TextBlock">
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="Foreground" Value="#FF333333"/>
+            <Setter Property="Margin" Value="0,0,6,0"/>
+        </Style>
+
+        <!-- 分组框样式 -->
+        <Style x:Key="GroupPanel" TargetType="Border">
+            <Setter Property="Background" Value="White"/>
+            <Setter Property="BorderBrush" Value="#FFE0E0E0"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius" Value="4"/>
+            <Setter Property="Padding" Value="10,8"/>
+            <Setter Property="Margin" Value="6,4"/>
+        </Style>
+
+        <!-- 主按钮 -->
+        <Style x:Key="PrimaryButton" TargetType="Button">
+            <Setter Property="Height" Value="28"/>
+            <Setter Property="Width" Value="80"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="Background" Value="#FF0078D4"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}"
+                                CornerRadius="3"
+                                Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Background" Value="#FF106EBE"/>
+                </Trigger>
+                <Trigger Property="IsPressed" Value="True">
+                    <Setter Property="Background" Value="#FF005A9E"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+
+        <!-- 卡片标题 -->
+        <Style x:Key="GroupTitle" TargetType="TextBlock">
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Foreground" Value="#FF666666"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="Margin" Value="0,0,0,6"/>
+        </Style>
+    </Window.Resources>
+
+    <Grid Margin="8">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition/>
+        </Grid.RowDefinitions>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition/>
+            <ColumnDefinition/>
+        </Grid.ColumnDefinitions>
+
+        <!-- 第一组：时间参数 + 设备IP -->
+        <Border Grid.Row="0" Grid.ColumnSpan="2" Style="{StaticResource GroupPanel}">
+            <StackPanel>
+                <TextBlock Text="运行参数" Style="{StaticResource GroupTitle}"/>
+                <WrapPanel>
+                    <TextBlock Text="间隔时间" Style="{StaticResource LabelText}"/>
+                    <TextBox Name="IntervalTime" Text="60" Width="50" Style="{StaticResource ModernTextBox}"/>
+                    <TextBlock Text="秒" Style="{StaticResource LabelText}" Margin="0,0,20,0"/>
+
+                    <TextBlock Text="总测试时间" Style="{StaticResource LabelText}"/>
+                    <TextBox Name="TotalTime" Text="2" Width="50" Style="{StaticResource ModernTextBox}"/>
+                    <TextBlock Text="分钟" Style="{StaticResource LabelText}" Margin="0,0,20,0"/>
+
+                    <TextBlock Text="调制解调器IP" Style="{StaticResource LabelText}"/>
+                    <TextBox Name="ModemIp" Text="10.10.10.3" Width="140" Style="{StaticResource ModernTextBox}"/>
+                </WrapPanel>
+            </StackPanel>
+        </Border>
+
+        <!-- 第二组：SSH命令 + 解析参数 + 按钮 -->
+        <Border Grid.Row="1" Grid.ColumnSpan="2" Style="{StaticResource GroupPanel}">
+            <StackPanel>
+                <TextBlock Text="串口 命令与解析" Style="{StaticResource GroupTitle}"/>
+                <WrapPanel>
+                    <TextBlock Text="串口命令" Style="{StaticResource LabelText}"/>
+                    <TextBox Name="SshCommand" Text="bsp cmd st sensor_pos" Width="280" Style="{StaticResource ModernTextBox}"/>
+
+                    <TextBlock Text="关键字" Style="{StaticResource LabelText}" Margin="20,0,6,0"
+                               ToolTip="在命令返回结果中匹配一行作为目标行。例如 current pos 可匹配到包含 'current pos' 的那一行。"/>
+                    <TextBox Name="Keyword" Text="current pos" Width="100" Style="{StaticResource ModernTextBox}"
+                             ToolTip="在命令返回结果中匹配一行作为目标行。例如 current pos 可匹配到包含 'current pos' 的那一行。"/>
+
+                    <TextBlock Text="取第几段" Style="{StaticResource LabelText}" Margin="20,0,6,0"
+                               ToolTip="把关键字所在行按空格/Tab 分割成多段，取第 N 段作为解析值（从 1 开始）。&#x0a;&#x0a;示例：&#x0a;  原始行：current pos 12.34.&#x0a;  关键字：current pos&#x0a;  取第几段：3&#x0a;  → 解析值 = 12.34"/>
+                    <ComboBox Name="FieldPosition" Width="50" Height="24" VerticalContentAlignment="Center" SelectedIndex="2"
+                              ToolTip="把关键字所在行按空格/Tab 分割成多段，取第 N 段作为解析值（从 1 开始）。&#x0a;&#x0a;示例：&#x0a;  原始行：current pos 12.34.&#x0a;  关键字：current pos&#x0a;  取第几段：3&#x0a;  → 解析值 = 12.34">
+                        <ComboBoxItem>1</ComboBoxItem>
+                        <ComboBoxItem>2</ComboBoxItem>
+                        <ComboBoxItem>3</ComboBoxItem>
+                        <ComboBoxItem>4</ComboBoxItem>
+                        <ComboBoxItem>5</ComboBoxItem>
+                        <ComboBoxItem>6</ComboBoxItem>
+                        <ComboBoxItem>7</ComboBoxItem>
+                        <ComboBoxItem>8</ComboBoxItem>
+                        <ComboBoxItem>9</ComboBoxItem>
+                        <ComboBoxItem>10</ComboBoxItem>
+                    </ComboBox>
+
+                    <Button Name="SendButton" Content="下发" Margin="30,0,0,0" Click="Send" Style="{StaticResource PrimaryButton}" ToolTip="点击开始/停止定时任务"/>
+                </WrapPanel>
+            </StackPanel>
+        </Border>
+
+        <!-- 左侧：操作日志 -->
+        <Border Grid.Row="2" Grid.Column="0" Style="{StaticResource GroupPanel}">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition/>
+                </Grid.RowDefinitions>
+                <TextBlock Text="操作日志" Style="{StaticResource GroupTitle}"/>
+                <TextBox Name="RegisterResultTextBox"
+                         Grid.Row="1"
+                         TextWrapping="Wrap" Text=""
+                         IsReadOnly="True"
+                         FontFamily="Consolas, Microsoft YaHei UI"
+                         FontSize="12"
+                         Background="#FFFAFAFA"
+                         BorderBrush="#FFE0E0E0"
+                         BorderThickness="1"
+                         Padding="8,6"
+                         VerticalScrollBarVisibility="Auto"
+                         HorizontalScrollBarVisibility="Auto"/>
+            </Grid>
+        </Border>
+
+        <!-- 右侧：计数 + 解析结果 -->
+        <Border Grid.Row="2" Grid.Column="1" Style="{StaticResource GroupPanel}">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition/>
+                </Grid.RowDefinitions>
+                <TextBlock Text="解析结果" Style="{StaticResource GroupTitle}"/>
+                <TextBlock Name="CountTextBlock" Grid.Row="1" Margin="0,0,0,6"
+                           Padding="10,6"
+                           Background="#FFEEEEEE"
+                           FontWeight="SemiBold"
+                           Foreground="#FF333333"
+                           Text="计数"/>
+                <ListView Name="LogListView" Grid.Row="2"
+                          Background="White"
+                          BorderBrush="#FFE0E0E0"
+                          BorderThickness="1"
+                          VirtualizingStackPanel.IsVirtualizing="True"
+                          VirtualizingStackPanel.VirtualizationMode="Recycling"
+                          ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                          SelectionMode="Extended">
+                    <ListView.ItemTemplate>
+                        <DataTemplate>
+                            <TextBlock Text="{Binding Text}" TextWrapping="Wrap" Padding="4,2"/>
+                        </DataTemplate>
+                    </ListView.ItemTemplate>
+                    <ListView.ItemContainerStyle>
+                        <Style TargetType="ListViewItem">
+                            <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+                            <Setter Property="Padding" Value="0"/>
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding IsOk}" Value="True">
+                                    <Setter Property="Foreground" Value="#FF1B7D3A"/>
+                                    <Setter Property="FontWeight" Value="SemiBold"/>
+                                </DataTrigger>
+                                <DataTrigger Binding="{Binding IsOk}" Value="False">
+                                    <Setter Property="Foreground" Value="#FFD32F2F"/>
+                                    <Setter Property="FontWeight" Value="SemiBold"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </ListView.ItemContainerStyle>
+                </ListView>
+            </Grid>
+        </Border>
+    </Grid>
+</Window>

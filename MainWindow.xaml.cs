@@ -504,8 +504,8 @@ namespace chengkong
                         AppendLogLeftBatch(localLog);
                         localLog.Clear();
 
-                        // 异步写文件日志（与正常路径一致）
-                        Task.Run(() => WriteToLog(currentCount, cancelResult, cancelValue, keyword, fieldPosition));
+                        // 同步写文件日志（与正常路径一致）
+                        WriteToLog(currentCount, cancelResult, cancelValue, keyword, fieldPosition);
 
                         // 右侧补一条"已取消"记录，与正常/异常条目保持一一对应
                         // 用实际解析值展示（避免界面 "= --" 与 txt 日志里的真实值不一致）
@@ -544,8 +544,8 @@ namespace chengkong
                     AppendLogLeftBatch(localLog);
                     localLog.Clear();
 
-                    // 写文件日志（异步，不阻塞主循环）
-                    Task.Run(() => WriteToLog(currentCount, result, currentValue, keyword, fieldPosition));
+                    // 写文件日志（同步写，避免 Task.Run 并发 AppendAllText 丢第 1 次块）
+                    WriteToLog(currentCount, result, currentValue, keyword, fieldPosition);
 
                     // 判定：解析失败 或 解析值 == "0.00" 都视为异常
                     bool parseFailed = currentValue == "解析失败" || currentValue == "0.00";

@@ -161,6 +161,7 @@
                          Grid.Row="1"
                          TextWrapping="Wrap" Text=""
                          IsReadOnly="True"
+                         IsUndoEnabled="False"
                          FontFamily="Consolas, Microsoft YaHei UI"
                          FontSize="12"
                          Background="#FFFAFAFA"

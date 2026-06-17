@@ -48,11 +48,15 @@ namespace chengkong
 
         #region UI 日志辅助方法
 
+        // 操作日志最大保留行数（超过自动从顶部截断，避免 TextBox 越长越卡）
+        private const int MaxLogLines = 2000;
+
         private void AppendLogLeft(string text)
         {
             Dispatcher.InvokeAsync(() =>
             {
                 RegisterResultTextBox.AppendText(text + Environment.NewLine);
+                TrimLogLines();
                 RegisterResultTextBox.ScrollToEnd();
             }, DispatcherPriority.Background);
         }
@@ -75,8 +79,34 @@ namespace chengkong
                     sb.AppendLine(line);
                 }
                 RegisterResultTextBox.AppendText(sb.ToString());
+                TrimLogLines();
                 RegisterResultTextBox.ScrollToEnd();
             }, DispatcherPriority.Background);
+        }
+
+        /// <summary>
+        /// 行数超限时，从顶部截断，保留最后 MaxLogLines 行
+        /// TextBox 越长单次 AppendText 越慢（O(n)），必须限制大小
+        /// </summary>
+        private void TrimLogLines()
+        {
+            var text = RegisterResultTextBox.Text;
+            int lineCount = 0;
+            int cutPos = -1;
+            // 从后往前扫描，找到第 MaxLogLines 个换行符的位置
+            for (int i = text.Length - 1; i >= 0; i--)
+            {
+                if (text[i] == '\n') lineCount++;
+                if (lineCount > MaxLogLines)
+                {
+                    cutPos = i + 1;
+                    break;
+                }
+            }
+            if (cutPos > 0)
+            {
+                RegisterResultTextBox.Text = text.Substring(cutPos);
+            }
         }
 
         private void AppendLogRight(string text, bool? isOk = null)

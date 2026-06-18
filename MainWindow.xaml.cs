@@ -264,17 +264,8 @@ namespace chengkong
                     ShellStream? s = null;
                     try
                     {
-                        // 同时使用密码认证 + 键盘交互认证（兼容网络设备 SSH 登录）
-                        var passwordAuth = new PasswordAuthenticationMethod(user, pwd);
-                        var keyboardAuth = new KeyboardInteractiveAuthenticationMethod(user);
-                        keyboardAuth.AuthenticationPrompt += (_, e) =>
-                        {
-                            foreach (var prompt in e.Prompts)
-                                prompt.Response = pwd;
-                        };
-
                         var connInfo = new ConnectionInfo(ip, port, user,
-                            passwordAuth, keyboardAuth);
+                            new PasswordAuthenticationMethod(user, pwd));
                         connInfo.Timeout = TimeSpan.FromSeconds(10);
                         c = new SshClient(connInfo);
                         c.Connect();

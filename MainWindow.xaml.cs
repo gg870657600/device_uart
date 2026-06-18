@@ -266,7 +266,6 @@ namespace chengkong
                     {
                         var connInfo = new ConnectionInfo(ip, port, user,
                             new PasswordAuthenticationMethod(user, pwd));
-                        connInfo.Timeout = TimeSpan.FromSeconds(10);
                         c = new SshClient(connInfo);
                         c.Connect();
 

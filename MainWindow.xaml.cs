@@ -253,43 +253,48 @@ namespace chengkong
             SetStatus(isSerial, "● 连接中...", "#FF999999");
 
             SshClient? client = null;
+            ShellStream? shell = null;
 
             try
             {
+                // 整个 SSH 连接 + Shell 创建 + 初始读取全部在后台线程执行
                 var connectTask = Task.Run(() =>
                 {
                     var connInfo = new ConnectionInfo(ip, port, user,
                         new PasswordAuthenticationMethod(user, pwd));
                     connInfo.Timeout = TimeSpan.FromSeconds(10);
-                    client = new SshClient(connInfo);
-                    client.Connect();
+                    var c = new SshClient(connInfo);
+                    c.Connect();
+
+                    var s = c.CreateShellStream("xterm", 80, 24, 800, 600, 2048);
+                    Thread.Sleep(300);
+                    ReadShellClean(s, 1000);
+
+                    client = c;
+                    shell = s;
                 });
 
-                // 15 秒总超时保护（覆盖 TCP 握手 + SSH 协议）
-                var completed = await Task.WhenAny(connectTask, Task.Delay(TimeSpan.FromSeconds(15)));
+                // 20 秒总超时保护（覆盖 TCP 握手 + SSH 协议 + CreateShellStream 信道协商）
+                var completed = await Task.WhenAny(connectTask, Task.Delay(TimeSpan.FromSeconds(20)));
 
                 if (completed != connectTask)
                 {
-                    AppendLog(isSerial, "[连接] ✗ 超时（15秒），可能网络不通或 IP/端口错误");
+                    AppendLog(isSerial, "[连接] ✗ 超时（20秒），可能网络不通或 IP/端口错误");
                     SetStatus(isSerial, "● 未连接", "#FFD32F2F");
-                    // 不释放 client，让后台任务继续完成（SSH.NET 内部最终会失败并释放资源）
-                    client = null;
                     return false;
                 }
 
                 // 等待 connectTask 中的异常抛出
                 await connectTask;
 
-                if (client == null || !client.IsConnected)
+                if (client == null || !client.IsConnected || shell == null)
                 {
                     AppendLog(isSerial, "[连接] ✗ 失败");
+                    if (client != null && !client.IsConnected) client.Dispose();
+                    if (shell != null) shell.Dispose();
                     SetStatus(isSerial, "● 未连接", "#FFD32F2F");
                     return false;
                 }
-
-                var shell = client.CreateShellStream("xterm", 80, 24, 800, 600, 2048);
-                await Task.Delay(300);
-                ReadShellClean(shell, 1000);
 
                 AppendLog(isSerial, "[连接] ✓ 成功");
 
@@ -310,6 +315,10 @@ namespace chengkong
             }
             catch (Exception ex)
             {
+                // 清理泄漏的资源
+                try { shell?.Dispose(); } catch { }
+                try { client?.Dispose(); } catch { }
+
                 AppendLog(isSerial, $"[连接] ✗ 异常: {ex.Message}");
                 SetStatus(isSerial, "● 未连接", "#FFD32F2F");
                 return false;

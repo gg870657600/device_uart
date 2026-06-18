@@ -260,18 +260,30 @@ namespace chengkong
                 // 整个 SSH 连接 + Shell 创建 + 初始读取全部在后台线程执行
                 var connectTask = Task.Run(() =>
                 {
-                    var connInfo = new ConnectionInfo(ip, port, user,
-                        new PasswordAuthenticationMethod(user, pwd));
-                    connInfo.Timeout = TimeSpan.FromSeconds(10);
-                    var c = new SshClient(connInfo);
-                    c.Connect();
+                    SshClient? c = null;
+                    ShellStream? s = null;
+                    try
+                    {
+                        var connInfo = new ConnectionInfo(ip, port, user,
+                            new PasswordAuthenticationMethod(user, pwd));
+                        connInfo.Timeout = TimeSpan.FromSeconds(10);
+                        c = new SshClient(connInfo);
+                        c.Connect();
 
-                    var s = c.CreateShellStream("xterm", 80, 24, 800, 600, 2048);
-                    Thread.Sleep(300);
-                    ReadShellClean(s, 1000);
+                        s = c.CreateShellStream("xterm", 80, 24, 800, 600, 2048);
+                        Thread.Sleep(300);
+                        ReadShellClean(s, 1000);
 
-                    client = c;
-                    shell = s;
+                        client = c;
+                        shell = s;
+                    }
+                    catch
+                    {
+                        // 异常时清理已分配的资源，防止泄漏
+                        try { s?.Dispose(); } catch { }
+                        try { c?.Dispose(); } catch { }
+                        throw;
+                    }
                 });
 
                 // 20 秒总超时保护（覆盖 TCP 握手 + SSH 协议 + CreateShellStream 信道协商）
@@ -319,7 +331,13 @@ namespace chengkong
                 try { shell?.Dispose(); } catch { }
                 try { client?.Dispose(); } catch { }
 
-                AppendLog(isSerial, $"[连接] ✗ 异常: {ex.Message}");
+                // 输出完整异常信息（类型 + 消息 + 内部异常 + 堆栈）
+                AppendLog(isSerial, $"[连接] ✗ 异常: {ex.GetType().Name}: {ex.Message}");
+                if (ex.InnerException != null)
+                    AppendLog(isSerial, $"  └─ 内部异常: {ex.InnerException.GetType().Name}: {ex.InnerException.Message}");
+                foreach (var line in ex.ToString().Split('\n'))
+                    AppendLog(isSerial, $"  {line.TrimEnd('\r')}");
+
                 SetStatus(isSerial, "● 未连接", "#FFD32F2F");
                 return false;
             }

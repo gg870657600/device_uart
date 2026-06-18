@@ -5,7 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:chengkong"
         mc:Ignorable="d"
-        Title="设备 SSH重定向串口 命令工具" Height="550" Width="1000"
+        Title="设备 SSH 工具（串口 + Telnet）" Height="620" Width="1080"
         Background="#FFF5F5F7"
         FontFamily="Microsoft YaHei UI, Segoe UI"
         Closing="MainWindow_Closing"
@@ -26,6 +26,16 @@
                     <Setter Property="BorderThickness" Value="1.5"/>
                 </Trigger>
             </Style.Triggers>
+        </Style>
+
+        <!-- 密码框统一样式 -->
+        <Style x:Key="ModernPasswordBox" TargetType="PasswordBox">
+            <Setter Property="Height" Value="24"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+            <Setter Property="Padding" Value="6,0"/>
+            <Setter Property="BorderBrush" Value="#FFCCCCCC"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Background" Value="White"/>
         </Style>
 
         <!-- 标签统一样式 -->
@@ -73,6 +83,23 @@
                 <Trigger Property="IsPressed" Value="True">
                     <Setter Property="Background" Value="#FF005A9E"/>
                 </Trigger>
+                <Trigger Property="IsEnabled" Value="False">
+                    <Setter Property="Background" Value="#FFB0B0B0"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+
+        <!-- 次要按钮（断开） -->
+        <Style x:Key="SecondaryButton" TargetType="Button" BasedOn="{StaticResource PrimaryButton}">
+            <Setter Property="Background" Value="#FF707070"/>
+            <Setter Property="Width" Value="60"/>
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Background" Value="#FF505050"/>
+                </Trigger>
+                <Trigger Property="IsEnabled" Value="False">
+                    <Setter Property="Background" Value="#FFB0B0B0"/>
+                </Trigger>
             </Style.Triggers>
         </Style>
 
@@ -83,152 +110,320 @@
             <Setter Property="FontSize" Value="12"/>
             <Setter Property="Margin" Value="0,0,0,6"/>
         </Style>
+
+        <!-- 字段位置下拉框样式 -->
+        <Style x:Key="FieldPositionCombo" TargetType="ComboBox">
+            <Setter Property="Width" Value="50"/>
+            <Setter Property="Height" Value="24"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+        </Style>
     </Window.Resources>
 
     <Grid Margin="8">
-        <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition/>
-        </Grid.RowDefinitions>
-        <Grid.ColumnDefinitions>
-            <ColumnDefinition/>
-            <ColumnDefinition/>
-        </Grid.ColumnDefinitions>
+        <TabControl Name="MainTabControl" Background="Transparent" BorderThickness="0">
+            <TabControl.Resources>
+                <Style TargetType="TabItem">
+                    <Setter Property="FontSize" Value="13"/>
+                    <Setter Property="Padding" Value="14,6"/>
+                    <Setter Property="FontWeight" Value="SemiBold"/>
+                </Style>
+            </TabControl.Resources>
 
-        <!-- 第一组：时间参数 + 设备IP -->
-        <Border Grid.Row="0" Grid.ColumnSpan="2" Style="{StaticResource GroupPanel}">
-            <StackPanel>
-                <TextBlock Text="运行参数" Style="{StaticResource GroupTitle}"/>
-                <WrapPanel>
-                    <TextBlock Text="间隔时间" Style="{StaticResource LabelText}"/>
-                    <TextBox Name="IntervalTime" Text="60" Width="50" Style="{StaticResource ModernTextBox}"/>
-                    <TextBlock Text="秒" Style="{StaticResource LabelText}" Margin="0,0,20,0"/>
+            <!-- ============== 串口会话 Tab ============== -->
+            <TabItem Header="串口会话">
+                <Grid Margin="4">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition/>
+                    </Grid.RowDefinitions>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition/>
+                        <ColumnDefinition/>
+                    </Grid.ColumnDefinitions>
 
-                    <TextBlock Text="总测试时间" Style="{StaticResource LabelText}"/>
-                    <TextBox Name="TotalTime" Text="2" Width="50" Style="{StaticResource ModernTextBox}"/>
-                    <TextBlock Text="分钟" Style="{StaticResource LabelText}" Margin="0,0,20,0"/>
+                    <!-- SSH 连接 -->
+                    <Border Grid.Row="0" Grid.ColumnSpan="2" Style="{StaticResource GroupPanel}">
+                        <StackPanel>
+                            <TextBlock Text="SSH 连接" Style="{StaticResource GroupTitle}"/>
+                            <WrapPanel>
+                                <TextBlock Text="IP" Style="{StaticResource LabelText}"/>
+                                <TextBox Name="SerialIp" Text="10.10.10.3" Width="140" Style="{StaticResource ModernTextBox}"/>
+                                <TextBlock Text="端口" Style="{StaticResource LabelText}" Margin="20,0,6,0"/>
+                                <TextBox Name="SerialPort" Text="22" Width="50" Style="{StaticResource ModernTextBox}"/>
+                                <TextBlock Text="用户" Style="{StaticResource LabelText}" Margin="20,0,6,0"/>
+                                <TextBox Name="SerialUser" Text="root" Width="80" Style="{StaticResource ModernTextBox}"/>
+                                <TextBlock Text="密码" Style="{StaticResource LabelText}" Margin="20,0,6,0"/>
+                                <PasswordBox Name="SerialPwd" Password="andisat" Width="120" Style="{StaticResource ModernPasswordBox}"/>
+                                <Button Name="SerialConnectBtn" Content="连接" Margin="20,0,0,0" Click="SerialConnect_Click" Style="{StaticResource PrimaryButton}"/>
+                                <Button Name="SerialDisconnectBtn" Content="断开" Margin="6,0,0,0" Click="SerialDisconnect_Click" Style="{StaticResource SecondaryButton}" IsEnabled="False"/>
+                                <TextBlock Name="SerialStatusText" Text="● 未连接" Margin="14,0,0,0" VerticalAlignment="Center" Foreground="#FFD32F2F" FontWeight="SemiBold"/>
+                            </WrapPanel>
+                        </StackPanel>
+                    </Border>
 
-                    <TextBlock Text="调制解调器IP" Style="{StaticResource LabelText}"/>
-                    <TextBox Name="ModemIp" Text="10.10.10.3" Width="140" Style="{StaticResource ModernTextBox}"/>
-                </WrapPanel>
-            </StackPanel>
-        </Border>
+                    <!-- 运行参数 -->
+                    <Border Grid.Row="1" Grid.ColumnSpan="2" Style="{StaticResource GroupPanel}">
+                        <StackPanel>
+                            <TextBlock Text="运行参数" Style="{StaticResource GroupTitle}"/>
+                            <WrapPanel>
+                                <TextBlock Text="间隔时间" Style="{StaticResource LabelText}"/>
+                                <TextBox Name="SerialIntervalTime" Text="60" Width="50" Style="{StaticResource ModernTextBox}"/>
+                                <TextBlock Text="秒" Style="{StaticResource LabelText}" Margin="0,0,20,0"/>
+                                <TextBlock Text="总测试时间" Style="{StaticResource LabelText}"/>
+                                <TextBox Name="SerialTotalTime" Text="2" Width="50" Style="{StaticResource ModernTextBox}"/>
+                                <TextBlock Text="分钟" Style="{StaticResource LabelText}"/>
+                            </WrapPanel>
+                        </StackPanel>
+                    </Border>
 
-        <!-- 第二组：SSH命令 + 解析参数 + 按钮 -->
-        <Border Grid.Row="1" Grid.ColumnSpan="2" Style="{StaticResource GroupPanel}">
-            <StackPanel>
-                <TextBlock Text="串口 命令与解析" Style="{StaticResource GroupTitle}"/>
-                <WrapPanel>
-                    <TextBlock Text="串口命令" Style="{StaticResource LabelText}"/>
-                    <TextBox Name="SshCommand" Text="bsp cmd st sensor_pos" Width="280" Style="{StaticResource ModernTextBox}"/>
+                    <!-- 命令 + 解析 -->
+                    <Border Grid.Row="2" Grid.ColumnSpan="2" Style="{StaticResource GroupPanel}">
+                        <StackPanel>
+                            <TextBlock Text="串口 命令与解析" Style="{StaticResource GroupTitle}"/>
+                            <WrapPanel>
+                                <TextBlock Text="串口命令" Style="{StaticResource LabelText}"/>
+                                <TextBox Name="SerialSshCommand" Text="bsp cmd st sensor_pos" Width="280" Style="{StaticResource ModernTextBox}"/>
+                                <TextBlock Text="关键字" Style="{StaticResource LabelText}" Margin="20,0,6,0"
+                                           ToolTip="在命令返回结果中匹配一行作为目标行。"/>
+                                <TextBox Name="SerialKeyword" Text="current pos" Width="100" Style="{StaticResource ModernTextBox}"/>
+                                <TextBlock Text="取第几段" Style="{StaticResource LabelText}" Margin="20,0,6,0"
+                                           ToolTip="把关键字所在行按空格/Tab 分割成多段，取第 N 段作为解析值（从 1 开始）。"/>
+                                <ComboBox Name="SerialFieldPosition" SelectedIndex="2" Style="{StaticResource FieldPositionCombo}">
+                                    <ComboBoxItem>1</ComboBoxItem>
+                                    <ComboBoxItem>2</ComboBoxItem>
+                                    <ComboBoxItem>3</ComboBoxItem>
+                                    <ComboBoxItem>4</ComboBoxItem>
+                                    <ComboBoxItem>5</ComboBoxItem>
+                                    <ComboBoxItem>6</ComboBoxItem>
+                                    <ComboBoxItem>7</ComboBoxItem>
+                                    <ComboBoxItem>8</ComboBoxItem>
+                                    <ComboBoxItem>9</ComboBoxItem>
+                                    <ComboBoxItem>10</ComboBoxItem>
+                                </ComboBox>
+                                <Button Name="SerialSendButton" Content="下发" Margin="30,0,0,0" Click="SerialSend_Click" Style="{StaticResource PrimaryButton}"/>
+                                <Button Name="SerialStopButton" Content="停止" Margin="6,0,0,0" Click="SerialStop_Click" Style="{StaticResource SecondaryButton}" IsEnabled="False"/>
+                            </WrapPanel>
+                        </StackPanel>
+                    </Border>
 
-                    <TextBlock Text="关键字" Style="{StaticResource LabelText}" Margin="20,0,6,0"
-                               ToolTip="在命令返回结果中匹配一行作为目标行。例如 current pos 可匹配到包含 'current pos' 的那一行。"/>
-                    <TextBox Name="Keyword" Text="current pos" Width="100" Style="{StaticResource ModernTextBox}"
-                             ToolTip="在命令返回结果中匹配一行作为目标行。例如 current pos 可匹配到包含 'current pos' 的那一行。"/>
+                    <!-- 双栏日志 -->
+                    <Border Grid.Row="3" Grid.Column="0" Style="{StaticResource GroupPanel}">
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition/>
+                            </Grid.RowDefinitions>
+                            <TextBlock Text="操作日志" Style="{StaticResource GroupTitle}"/>
+                            <ListView Name="SerialOpLogListView"
+                                      Grid.Row="1"
+                                      VirtualizingStackPanel.IsVirtualizing="True"
+                                      VirtualizingStackPanel.VirtualizationMode="Recycling"
+                                      VirtualizingStackPanel.ScrollUnit="Pixel"
+                                      ScrollViewer.HorizontalScrollBarVisibility="Auto"
+                                      ScrollViewer.VerticalScrollBarVisibility="Auto"
+                                      ScrollViewer.CanContentScroll="True"
+                                      Background="#FFFAFAFA"
+                                      BorderBrush="#FFE0E0E0"
+                                      BorderThickness="1">
+                                <ListView.ItemTemplate>
+                                    <DataTemplate>
+                                        <TextBlock Text="{Binding Text}" FontFamily="Consolas, Microsoft YaHei UI" FontSize="12" TextWrapping="Wrap" Padding="8,2"/>
+                                    </DataTemplate>
+                                </ListView.ItemTemplate>
+                            </ListView>
+                        </Grid>
+                    </Border>
 
-                    <TextBlock Text="取第几段" Style="{StaticResource LabelText}" Margin="20,0,6,0"
-                               ToolTip="把关键字所在行按空格/Tab 分割成多段，取第 N 段作为解析值（从 1 开始）。&#x0a;&#x0a;示例：&#x0a;  原始行：current pos 12.34.&#x0a;  关键字：current pos&#x0a;  取第几段：3&#x0a;  → 解析值 = 12.34"/>
-                    <ComboBox Name="FieldPosition" Width="50" Height="24" VerticalContentAlignment="Center" SelectedIndex="2"
-                              ToolTip="把关键字所在行按空格/Tab 分割成多段，取第 N 段作为解析值（从 1 开始）。&#x0a;&#x0a;示例：&#x0a;  原始行：current pos 12.34.&#x0a;  关键字：current pos&#x0a;  取第几段：3&#x0a;  → 解析值 = 12.34">
-                        <ComboBoxItem>1</ComboBoxItem>
-                        <ComboBoxItem>2</ComboBoxItem>
-                        <ComboBoxItem>3</ComboBoxItem>
-                        <ComboBoxItem>4</ComboBoxItem>
-                        <ComboBoxItem>5</ComboBoxItem>
-                        <ComboBoxItem>6</ComboBoxItem>
-                        <ComboBoxItem>7</ComboBoxItem>
-                        <ComboBoxItem>8</ComboBoxItem>
-                        <ComboBoxItem>9</ComboBoxItem>
-                        <ComboBoxItem>10</ComboBoxItem>
-                    </ComboBox>
+                    <Border Grid.Row="3" Grid.Column="1" Style="{StaticResource GroupPanel}">
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition/>
+                            </Grid.RowDefinitions>
+                            <TextBlock Text="解析结果" Style="{StaticResource GroupTitle}"/>
+                            <TextBlock Name="SerialCountTextBlock" Grid.Row="1" Margin="0,0,0,6"
+                                       Padding="10,6" Background="#FFEEEEEE" FontWeight="SemiBold" Foreground="#FF333333" Text="计数"/>
+                            <ListView Name="SerialResultListView" Grid.Row="2"
+                                      Background="White" BorderBrush="#FFE0E0E0" BorderThickness="1"
+                                      VirtualizingStackPanel.IsVirtualizing="True" VirtualizingStackPanel.VirtualizationMode="Recycling"
+                                      ScrollViewer.HorizontalScrollBarVisibility="Disabled" SelectionMode="Extended">
+                                <ListView.ItemTemplate>
+                                    <DataTemplate>
+                                        <TextBlock Text="{Binding Text}" TextWrapping="Wrap" Padding="4,2"/>
+                                    </DataTemplate>
+                                </ListView.ItemTemplate>
+                                <ListView.ItemContainerStyle>
+                                    <Style TargetType="ListViewItem">
+                                        <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+                                        <Setter Property="Padding" Value="0"/>
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding IsOk}" Value="True">
+                                                <Setter Property="Foreground" Value="#FF1B7D3A"/>
+                                                <Setter Property="FontWeight" Value="SemiBold"/>
+                                            </DataTrigger>
+                                            <DataTrigger Binding="{Binding IsOk}" Value="False">
+                                                <Setter Property="Foreground" Value="#FFD32F2F"/>
+                                                <Setter Property="FontWeight" Value="SemiBold"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </ListView.ItemContainerStyle>
+                            </ListView>
+                        </Grid>
+                    </Border>
+                </Grid>
+            </TabItem>
 
-                    <Button Name="SendButton" Content="下发" Margin="30,0,0,0" Click="Send" Style="{StaticResource PrimaryButton}" ToolTip="点击开始/停止定时任务"/>
-                </WrapPanel>
-            </StackPanel>
-        </Border>
+            <!-- ============== Telnet 会话 Tab ============== -->
+            <TabItem Header="Telnet 会话">
+                <Grid Margin="4">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition/>
+                    </Grid.RowDefinitions>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition/>
+                        <ColumnDefinition/>
+                    </Grid.ColumnDefinitions>
 
-        <!-- 左侧：操作日志 -->
-        <Border Grid.Row="2" Grid.Column="0" Style="{StaticResource GroupPanel}">
-            <Grid>
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition/>
-                </Grid.RowDefinitions>
-                <TextBlock Text="操作日志" Style="{StaticResource GroupTitle}"/>
-                <ListView Name="OpLogListView"
-                          Grid.Row="1"
-                          ItemsSource="{Binding}"
-                          VirtualizingStackPanel.IsVirtualizing="True"
-                          VirtualizingStackPanel.VirtualizationMode="Recycling"
-                          VirtualizingStackPanel.ScrollUnit="Pixel"
-                          ScrollViewer.HorizontalScrollBarVisibility="Auto"
-                          ScrollViewer.VerticalScrollBarVisibility="Auto"
-                          ScrollViewer.CanContentScroll="True"
-                          Background="#FFFAFAFA"
-                          BorderBrush="#FFE0E0E0"
-                          BorderThickness="1"
-                          Padding="0">
-                    <ListView.ItemTemplate>
-                        <DataTemplate>
-                            <TextBlock Text="{Binding Text}"
-                                       FontFamily="Consolas, Microsoft YaHei UI"
-                                       FontSize="12"
-                                       TextWrapping="Wrap"
-                                       Padding="8,2"/>
-                        </DataTemplate>
-                    </ListView.ItemTemplate>
-                </ListView>
-            </Grid>
-        </Border>
+                    <!-- SSH 连接 -->
+                    <Border Grid.Row="0" Grid.ColumnSpan="2" Style="{StaticResource GroupPanel}">
+                        <StackPanel>
+                            <TextBlock Text="SSH 连接（登录后执行 telnet 0 2323）" Style="{StaticResource GroupTitle}"/>
+                            <WrapPanel>
+                                <TextBlock Text="IP" Style="{StaticResource LabelText}"/>
+                                <TextBox Name="TelnetIp" Text="10.10.10.3" Width="140" Style="{StaticResource ModernTextBox}"/>
+                                <TextBlock Text="端口" Style="{StaticResource LabelText}" Margin="20,0,6,0"/>
+                                <TextBox Name="TelnetPort" Text="22" Width="50" Style="{StaticResource ModernTextBox}"/>
+                                <TextBlock Text="用户" Style="{StaticResource LabelText}" Margin="20,0,6,0"/>
+                                <TextBox Name="TelnetUser" Text="root" Width="80" Style="{StaticResource ModernTextBox}"/>
+                                <TextBlock Text="密码" Style="{StaticResource LabelText}" Margin="20,0,6,0"/>
+                                <PasswordBox Name="TelnetPwd" Password="andisat" Width="120" Style="{StaticResource ModernPasswordBox}"/>
+                                <Button Name="TelnetConnectBtn" Content="连接" Margin="20,0,0,0" Click="TelnetConnect_Click" Style="{StaticResource PrimaryButton}"/>
+                                <Button Name="TelnetDisconnectBtn" Content="断开" Margin="6,0,0,0" Click="TelnetDisconnect_Click" Style="{StaticResource SecondaryButton}" IsEnabled="False"/>
+                                <TextBlock Name="TelnetStatusText" Text="● 未连接" Margin="14,0,0,0" VerticalAlignment="Center" Foreground="#FFD32F2F" FontWeight="SemiBold"/>
+                            </WrapPanel>
+                        </StackPanel>
+                    </Border>
 
-        <!-- 右侧：计数 + 解析结果 -->
-        <Border Grid.Row="2" Grid.Column="1" Style="{StaticResource GroupPanel}">
-            <Grid>
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition/>
-                </Grid.RowDefinitions>
-                <TextBlock Text="解析结果" Style="{StaticResource GroupTitle}"/>
-                <TextBlock Name="CountTextBlock" Grid.Row="1" Margin="0,0,0,6"
-                           Padding="10,6"
-                           Background="#FFEEEEEE"
-                           FontWeight="SemiBold"
-                           Foreground="#FF333333"
-                           Text="计数"/>
-                <ListView Name="LogListView" Grid.Row="2"
-                          Background="White"
-                          BorderBrush="#FFE0E0E0"
-                          BorderThickness="1"
-                          VirtualizingStackPanel.IsVirtualizing="True"
-                          VirtualizingStackPanel.VirtualizationMode="Recycling"
-                          ScrollViewer.HorizontalScrollBarVisibility="Disabled"
-                          SelectionMode="Extended">
-                    <ListView.ItemTemplate>
-                        <DataTemplate>
-                            <TextBlock Text="{Binding Text}" TextWrapping="Wrap" Padding="4,2"/>
-                        </DataTemplate>
-                    </ListView.ItemTemplate>
-                    <ListView.ItemContainerStyle>
-                        <Style TargetType="ListViewItem">
-                            <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
-                            <Setter Property="Padding" Value="0"/>
-                            <Style.Triggers>
-                                <DataTrigger Binding="{Binding IsOk}" Value="True">
-                                    <Setter Property="Foreground" Value="#FF1B7D3A"/>
-                                    <Setter Property="FontWeight" Value="SemiBold"/>
-                                </DataTrigger>
-                                <DataTrigger Binding="{Binding IsOk}" Value="False">
-                                    <Setter Property="Foreground" Value="#FFD32F2F"/>
-                                    <Setter Property="FontWeight" Value="SemiBold"/>
-                                </DataTrigger>
-                            </Style.Triggers>
-                        </Style>
-                    </ListView.ItemContainerStyle>
-                </ListView>
-            </Grid>
-        </Border>
+                    <!-- 运行参数 -->
+                    <Border Grid.Row="1" Grid.ColumnSpan="2" Style="{StaticResource GroupPanel}">
+                        <StackPanel>
+                            <TextBlock Text="运行参数" Style="{StaticResource GroupTitle}"/>
+                            <WrapPanel>
+                                <TextBlock Text="间隔时间" Style="{StaticResource LabelText}"/>
+                                <TextBox Name="TelnetIntervalTime" Text="60" Width="50" Style="{StaticResource ModernTextBox}"/>
+                                <TextBlock Text="秒" Style="{StaticResource LabelText}" Margin="0,0,20,0"/>
+                                <TextBlock Text="总测试时间" Style="{StaticResource LabelText}"/>
+                                <TextBox Name="TelnetTotalTime" Text="2" Width="50" Style="{StaticResource ModernTextBox}"/>
+                                <TextBlock Text="分钟" Style="{StaticResource LabelText}"/>
+                            </WrapPanel>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- 命令 + 解析 -->
+                    <Border Grid.Row="2" Grid.ColumnSpan="2" Style="{StaticResource GroupPanel}">
+                        <StackPanel>
+                            <TextBlock Text="Telnet 命令与解析" Style="{StaticResource GroupTitle}"/>
+                            <WrapPanel>
+                                <TextBlock Text="Telnet命令" Style="{StaticResource LabelText}"/>
+                                <TextBox Name="TelnetSshCommand" Text="get-if-rx-curesn0:@bid=3&amp;pid=1&amp;chid=1" Width="280" Style="{StaticResource ModernTextBox}"/>
+                                <TextBlock Text="关键字" Style="{StaticResource LabelText}" Margin="20,0,6,0"
+                                           ToolTip="在命令返回结果中匹配一行作为目标行。"/>
+                                <TextBox Name="TelnetKeyword" Text="EBN0" Width="100" Style="{StaticResource ModernTextBox}"/>
+                                <TextBlock Text="取第几段" Style="{StaticResource LabelText}" Margin="20,0,6,0"
+                                           ToolTip="把关键字所在行按空格/Tab 分割成多段，取第 N 段作为解析值（从 1 开始）。"/>
+                                <ComboBox Name="TelnetFieldPosition" SelectedIndex="5" Style="{StaticResource FieldPositionCombo}">
+                                    <ComboBoxItem>1</ComboBoxItem>
+                                    <ComboBoxItem>2</ComboBoxItem>
+                                    <ComboBoxItem>3</ComboBoxItem>
+                                    <ComboBoxItem>4</ComboBoxItem>
+                                    <ComboBoxItem>5</ComboBoxItem>
+                                    <ComboBoxItem>6</ComboBoxItem>
+                                    <ComboBoxItem>7</ComboBoxItem>
+                                    <ComboBoxItem>8</ComboBoxItem>
+                                    <ComboBoxItem>9</ComboBoxItem>
+                                    <ComboBoxItem>10</ComboBoxItem>
+                                </ComboBox>
+                                <Button Name="TelnetSendButton" Content="下发" Margin="30,0,0,0" Click="TelnetSend_Click" Style="{StaticResource PrimaryButton}"/>
+                                <Button Name="TelnetStopButton" Content="停止" Margin="6,0,0,0" Click="TelnetStop_Click" Style="{StaticResource SecondaryButton}" IsEnabled="False"/>
+                            </WrapPanel>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- 双栏日志 -->
+                    <Border Grid.Row="3" Grid.Column="0" Style="{StaticResource GroupPanel}">
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition/>
+                            </Grid.RowDefinitions>
+                            <TextBlock Text="操作日志" Style="{StaticResource GroupTitle}"/>
+                            <ListView Name="TelnetOpLogListView"
+                                      Grid.Row="1"
+                                      VirtualizingStackPanel.IsVirtualizing="True"
+                                      VirtualizingStackPanel.VirtualizationMode="Recycling"
+                                      VirtualizingStackPanel.ScrollUnit="Pixel"
+                                      ScrollViewer.HorizontalScrollBarVisibility="Auto"
+                                      ScrollViewer.VerticalScrollBarVisibility="Auto"
+                                      ScrollViewer.CanContentScroll="True"
+                                      Background="#FFFAFAFA"
+                                      BorderBrush="#FFE0E0E0"
+                                      BorderThickness="1">
+                                <ListView.ItemTemplate>
+                                    <DataTemplate>
+                                        <TextBlock Text="{Binding Text}" FontFamily="Consolas, Microsoft YaHei UI" FontSize="12" TextWrapping="Wrap" Padding="8,2"/>
+                                    </DataTemplate>
+                                </ListView.ItemTemplate>
+                            </ListView>
+                        </Grid>
+                    </Border>
+
+                    <Border Grid.Row="3" Grid.Column="1" Style="{StaticResource GroupPanel}">
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition/>
+                            </Grid.RowDefinitions>
+                            <TextBlock Text="解析结果" Style="{StaticResource GroupTitle}"/>
+                            <TextBlock Name="TelnetCountTextBlock" Grid.Row="1" Margin="0,0,0,6"
+                                       Padding="10,6" Background="#FFEEEEEE" FontWeight="SemiBold" Foreground="#FF333333" Text="计数"/>
+                            <ListView Name="TelnetResultListView" Grid.Row="2"
+                                      Background="White" BorderBrush="#FFE0E0E0" BorderThickness="1"
+                                      VirtualizingStackPanel.IsVirtualizing="True" VirtualizingStackPanel.VirtualizationMode="Recycling"
+                                      ScrollViewer.HorizontalScrollBarVisibility="Disabled" SelectionMode="Extended">
+                                <ListView.ItemTemplate>
+                                    <DataTemplate>
+                                        <TextBlock Text="{Binding Text}" TextWrapping="Wrap" Padding="4,2"/>
+                                    </DataTemplate>
+                                </ListView.ItemTemplate>
+                                <ListView.ItemContainerStyle>
+                                    <Style TargetType="ListViewItem">
+                                        <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+                                        <Setter Property="Padding" Value="0"/>
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding IsOk}" Value="True">
+                                                <Setter Property="Foreground" Value="#FF1B7D3A"/>
+                                                <Setter Property="FontWeight" Value="SemiBold"/>
+                                            </DataTrigger>
+                                            <DataTrigger Binding="{Binding IsOk}" Value="False">
+                                                <Setter Property="Foreground" Value="#FFD32F2F"/>
+                                                <Setter Property="FontWeight" Value="SemiBold"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </ListView.ItemContainerStyle>
+                            </ListView>
+                        </Grid>
+                    </Border>
+                </Grid>
+            </TabItem>
+        </TabControl>
     </Grid>
 </Window>

@@ -11,6 +11,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
+using System.Windows.Media;
 using System.Windows.Threading;
 
 namespace chengkong
@@ -217,10 +218,17 @@ namespace chengkong
         {
             Dispatcher.InvokeAsync(() =>
             {
+                var brush = new SolidColorBrush((Color)ColorConverter.ConvertFromString(color));
                 if (isSerial)
+                {
                     SerialStatusText.Text = text;
+                    SerialStatusText.Foreground = brush;
+                }
                 else
+                {
                     TelnetStatusText.Text = text;
+                    TelnetStatusText.Foreground = brush;
+                }
             });
         }
 
@@ -244,16 +252,33 @@ namespace chengkong
             AppendLog(isSerial, $"═══════ [连接] 准备连接 → IP: {ip}:{port}, 用户: {user} ═══════");
             SetStatus(isSerial, "● 连接中...", "#FF999999");
 
+            SshClient? client = null;
+
             try
             {
-                SshClient? client = null;
-                await Task.Run(() =>
+                var connectTask = Task.Run(() =>
                 {
                     var connInfo = new ConnectionInfo(ip, port, user,
                         new PasswordAuthenticationMethod(user, pwd));
+                    connInfo.Timeout = TimeSpan.FromSeconds(10);
                     client = new SshClient(connInfo);
                     client.Connect();
                 });
+
+                // 15 秒总超时保护（覆盖 TCP 握手 + SSH 协议）
+                var completed = await Task.WhenAny(connectTask, Task.Delay(TimeSpan.FromSeconds(15)));
+
+                if (completed != connectTask)
+                {
+                    AppendLog(isSerial, "[连接] ✗ 超时（15秒），可能网络不通或 IP/端口错误");
+                    SetStatus(isSerial, "● 未连接", "#FFD32F2F");
+                    // 不释放 client，让后台任务继续完成（SSH.NET 内部最终会失败并释放资源）
+                    client = null;
+                    return false;
+                }
+
+                // 等待 connectTask 中的异常抛出
+                await connectTask;
 
                 if (client == null || !client.IsConnected)
                 {

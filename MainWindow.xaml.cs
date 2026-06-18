@@ -134,6 +134,9 @@ namespace chengkong
             pending.Enqueue(new LogEntry { Text = text });
         }
 
+        // 别名，方便从后台线程直接调用（实际上 AppendLog 已经是线程安全的）
+        private void AppendLogDirect(bool isSerial, string text) => AppendLog(isSerial, text);
+
         private void AppendLogBatch(bool isSerial, IEnumerable<string> lines)
         {
             if (lines == null) return;
@@ -264,27 +267,40 @@ namespace chengkong
                     ShellStream? s = null;
                     try
                     {
-                        var connInfo = new ConnectionInfo(ip, port, user,
-                            new PasswordAuthenticationMethod(user, pwd));
-                        // 兼容老设备（OpenSSH 6.7 等仅支持 ssh-rsa host key）
-                        // SSH.NET 2025.1.0 默认 HostKeyAlgorithms 不含 ssh-rsa，协商无匹配会导致 Connect 死等
-                        connInfo.HostKeyAlgorithms.Clear();
-                        connInfo.HostKeyAlgorithms.Add("ssh-rsa",
-                            data => new Renci.SshNet.Security.KeyHostAlgorithm("ssh-rsa",
+                        // 与原版一致：ConnectionInfo(string host, string username, ...)，默认 port=22
+                        var auth = new PasswordAuthenticationMethod(user, pwd);
+                        var connInfo = new ConnectionInfo(ip, user, auth);
+                        
+                        // 诊断：输出当前 HostKeyAlgorithms 列表
+                        var algoNames = string.Join(", ", connInfo.HostKeyAlgorithms.Keys);
+                        AppendLogDirect(isSerial, $"[诊断] HostKeyAlgorithms: {algoNames}");
+                        
+                        // 确保 ssh-rsa 在其中（老设备 OpenSSH 6.7 仅支持这个）
+                        connInfo.HostKeyAlgorithms["ssh-rsa"] = data => 
+                            new Renci.SshNet.Security.KeyHostAlgorithm("ssh-rsa",
                                 new Renci.SshNet.Security.RsaKey(
-                                    new Renci.SshNet.Security.SshKeyData(data))));
+                                    new Renci.SshNet.Security.SshKeyData(data)));
+                        
                         c = new SshClient(connInfo);
+                        c.HostKeyReceived += (_, e) => AppendLogDirect(isSerial, $"[诊断] HostKeyReceived: {e.HostKeyName}, CanTrust={e.CanTrust}");
+                        
+                        AppendLogDirect(isSerial, "[诊断] 开始 c.Connect()...");
                         c.Connect();
+                        AppendLogDirect(isSerial, "[诊断] c.Connect() 完成!");
 
+                        AppendLogDirect(isSerial, "[诊断] 开始 CreateShellStream...");
                         s = c.CreateShellStream("xterm", 80, 24, 800, 600, 2048);
+                        AppendLogDirect(isSerial, "[诊断] CreateShellStream 完成!");
+                        
                         Thread.Sleep(300);
                         ReadShellClean(s, 1000);
 
                         client = c;
                         shell = s;
                     }
-                    catch
+                    catch (Exception ex)
                     {
+                        AppendLogDirect(isSerial, $"[诊断] 异常: {ex.GetType().Name}: {ex.Message}");
                         // 异常时清理已分配的资源，防止泄漏
                         try { s?.Dispose(); } catch { }
                         try { c?.Dispose(); } catch { }
